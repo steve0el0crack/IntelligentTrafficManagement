@@ -4,7 +4,7 @@ import random
 #WORLD
 #Stellen
 places = []
-placesnum = 100
+placesnum = 5
 autosnum = 3
 
 for i in range(0,placesnum):
@@ -36,6 +36,9 @@ def render():
     print "-------\n"
 
 def move():
+    #Shows the world before THE CHANGE
+    render()
+    
     autostellen ={} 
     #print "AUTO PLACES SEARCH\n............"
     for stelle in places:
@@ -76,27 +79,16 @@ def move():
             else:
                 places[autopos+1].append(autostruc)
   
-    render()
     return "1 BEWEGUNG"
         
 
-
-
-
-print "START "
-
-render()
-
+#For every car, until they all state at the lamp
 while autosnum > len(places[lpos]) - 2:
-    #print "AUTOS: " + str(autosnum)
-    #print "SHON DA: " + str(len(places[lpos]) - 2)
     move()
 
+#Shows the final state of the world
+render()
 
-print "------"
-for x in places:
-    print x
-print "------"
 
 
 
