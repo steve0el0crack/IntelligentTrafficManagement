@@ -4,8 +4,7 @@ import os
 import time
 
 
-#WORLD
-#Stellen
+#WORLD INITALLIZING
 world = []
 xdim = int(sys.argv[1])
 ydim = int(sys.argv[2])
@@ -20,13 +19,9 @@ for y in range(ydim):
 for x in range(autosnum):
     world[random.randint(0, ydim - 1)][random.randint(0, xdim - 1)]["auto"] = {"ID" : x, "dir" : ""}
 
-#LAMP
+#LAMP INITIALLIZING
 lpos = (random.randint(0, ydim) - 1, random.randint(0, xdim) - 1)
 world[lpos[0]][lpos[1]]["lampe"] = ""
-
-
-#0 ROT
-#1 GRUENN
 def lamphandlung(color):
 	colors = {0 : u"\u001b[38;5;1m", 1 : u"\u001b[38;5;2m"}
 	for y in world:
@@ -37,51 +32,9 @@ def lamphandlung(color):
 u"\u001b[38;5;1m" -------> ANSI CODE for RED
 u"\u001b[38;5;2m" -------> ANSI CODE for GREEN
 """   
-                                                                                                                 
 lamphandlung(0)
 
-
-def render():
-    print "\n------"
-    for x in world:
-        sys.stdout.write(str(x) + "\n")
-    print "-------\n"
-
-def move():
-    #Shows the world before THE CHANGE
-    render()
-    
-    autostellen ={} 
-    for stelle in world:
-        for dicc in stelle:
-            if "auto" in dicc.keys():
-                autostellen[world.index(stelle)] = dicc
-    
-    tmpanzahl = len(autostellen.keys())
-    
-    for bewegnumber in range(0,tmpanzahl): 
-        autopos = autostellen.keys()[bewegnumber]
-            
-        # Um zu gucken was es da ueberhaupt gibt
-        tmp = []
-        for i in range(0, len(world[autopos])):
-            tmp.append(world[autopos][i].values()[0])
-        #Wenn da eine Lampe ist, nicht bewegen.        
-        if 0 in tmp and "auto" in tmp:
-            continue #Wird das naechste Auto angegriffen um zu bewegen, in der Liste Autostellen.keys()
-        else:                
-            #Um sich zu bewegen
-            autostruc = autostellen.values()[bewegnumber]
-            world[autopos].remove(autostruc)
-            if autopos == xdim - 1:
-                world[0].append(autostruc)
-            else:
-                world[autopos+1].append(autostruc)
-	time.sleep(1)
-	
-    return "1 BEWEGUNG"
-
-#PRESENT AND PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
+#PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
 def paintworld():
 	for street in world:
 		for place in street:
@@ -96,7 +49,50 @@ def paintworld():
 			sys.stdout.write(todraw.ljust(2))
 			sys.stdout.write(u"\u001b[0m")
 		print ""
-paintworld()
+
+#MAIN FUNCTION
+
+def detectlampe(place):
+	if "lampe" in place.keys():
+		if place["lampe"] == u"\u001b[38;5;1m":
+			return "red"
+		else:
+			return "green"
+
+def move():
+	#PAINT the world before THE CHANGE
+	paintworld()   
+
+	autocoords =[] 
+	for street in world:
+		for place in street:
+		    if "auto" in place.keys():
+			y = world.index(street)
+			x = street.index(place)	
+			autocoords.append((y, x))
+	for coords in autocoords: 
+		carplace = world[coords[0]][coords[1]]
+
+		#DEPENDS on the DIRECTION of the MOVEMENT
+		if coords[1] == xdim - 1:
+			nextplace = world[coords[0]][0]
+			nscoords = (coords[0], 0)
+			
+		else:	
+			nextplace = world[coords[0]][coords[1] + 1]
+			nscoords = (coords[0], coords[1] + 1)
+
+
+		#Wenn da eine Lampe ist, nicht bewegen.        
+		if detectlampe(carplace) == "red" or "car" in nextplace.keys():
+		    continue #The position (coords) of the next car would be taked
+		else:               
+			#Um sich zu bewegen
+			auto = carplace.pop("auto")	
+			world[nscoords[0]][nscoords[1]]["auto"] = auto
+			time.sleep(1)
+
+	return "1 BEWEGUNG"
 
 #For every car, until they all state at the lamp
 while autosnum > len(world[lpos[0]][lpos[1]].keys()) - 2:
