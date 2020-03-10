@@ -1,38 +1,50 @@
 import random
+import sys
+import os
+import time
 
 
 #WORLD
 #Stellen
-places = []
-placesnum = 5
-autosnum = 3
+world = []
+xdim = int(sys.argv[1])
+ydim = int(sys.argv[2])
+autosnum = int(sys.argv[3])
 
-for i in range(0,placesnum):
-    places.append([{"state" : 1}])
+for y in range(ydim):
+	world.append([])
+	for x in range(xdim):
+		world[y].append({"state" : 1})
 
 #AUTO hinzufuegen
-for x in range(0, autosnum):
-    places[random.randint(0,len(places)-1)].append({"auto" : "auto", "ID" : x})
+for x in range(autosnum):
+    world[random.randint(0, ydim - 1)][random.randint(0, xdim - 1)]["auto"] = {"ID" : x, "dir" : ""}
 
 #LAMP
-lpos = random.randint(0,len(places)-1)
-places[lpos].append({"lampe" : ""})
+lpos = (random.randint(0, ydim) - 1, random.randint(0, xdim) - 1)
+world[lpos[0]][lpos[1]]["lampe"] = ""
 
 
 #0 ROT
 #1 GRUENN
-def lamphandlung(ziel):
-    for x in range(0,len(places)):
-        for i in range(0, len(places[x])):
-            if places[x][i].keys()[0] == "lampe":
-                places[x][i]["lampe"] = ziel                                                                                                                    
+def lamphandlung(color):
+	colors = {0 : u"\u001b[38;5;1m", 1 : u"\u001b[38;5;2m"}
+	for y in world:
+		for x in y:
+			if "lampe" in x.keys():		
+				x["lampe"] = colors[color]
+"""
+u"\u001b[38;5;1m" -------> ANSI CODE for RED
+u"\u001b[38;5;2m" -------> ANSI CODE for GREEN
+"""   
+                                                                                                                 
 lamphandlung(0)
 
 
 def render():
     print "\n------"
-    for x in places:
-        print x
+    for x in world:
+        sys.stdout.write(str(x) + "\n")
     print "-------\n"
 
 def move():
@@ -40,51 +52,57 @@ def move():
     render()
     
     autostellen ={} 
-    #print "AUTO PLACES SEARCH\n............"
-    for stelle in places:
-        #print "STELLE: " + str(stelle)
+    for stelle in world:
         for dicc in stelle:
-            #print "DICC: " + str(dicc)
             if "auto" in dicc.keys():
-                autostellen[places.index(stelle)] = dicc
-    
-    #print "AUTOS: " + str(autostellen)
-    #print "............\n"
+                autostellen[world.index(stelle)] = dicc
     
     tmpanzahl = len(autostellen.keys())
     
     for bewegnumber in range(0,tmpanzahl): 
         autopos = autostellen.keys()[bewegnumber]
-        #print "AUTO MOVEMENT\nXXXXXXXXXXX"
-        #print type(autopos)
             
         # Um zu gucken was es da ueberhaupt gibt
         tmp = []
-        for i in range(0, len(places[autopos])):
-            tmp.append(places[autopos][i].values()[0])
-        #print "Es gibt da: " + str(tmp)
+        for i in range(0, len(world[autopos])):
+            tmp.append(world[autopos][i].values()[0])
         #Wenn da eine Lampe ist, nicht bewegen.        
         if 0 in tmp and "auto" in tmp:
             continue #Wird das naechste Auto angegriffen um zu bewegen, in der Liste Autostellen.keys()
         else:                
             #Um sich zu bewegen
             autostruc = autostellen.values()[bewegnumber]
-            #print places[autopos]
-            #print autostruc
-            #places[autopos].index(autostruc)
-            places[autopos].remove(autostruc)
-            if autopos == placesnum - 1:
-                #print "APPEND"
-                places[0].append(autostruc)
+            world[autopos].remove(autostruc)
+            if autopos == xdim - 1:
+                world[0].append(autostruc)
             else:
-                places[autopos+1].append(autostruc)
-  
+                world[autopos+1].append(autostruc)
+	time.sleep(1)
+	
     return "1 BEWEGUNG"
-        
+
+#PRESENT AND PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
+def paintworld():
+	for street in world:
+		for place in street:
+			symbols = {1 : "=", 0 : " ", "auto" : "@"}
+			todraw = ""
+			if "lampe" in place.keys():
+				todraw = place["lampe"]
+			if "auto" in place.keys():
+				todraw = todraw + symbols["auto"] + " " 
+			else:
+				todraw = todraw + symbols[place["state"]] + " " 
+			sys.stdout.write(todraw.ljust(2))
+			sys.stdout.write(u"\u001b[0m")
+		print ""
+paintworld()
 
 #For every car, until they all state at the lamp
-while autosnum > len(places[lpos]) - 2:
-    move()
+while autosnum > len(world[lpos[0]][lpos[1]].keys()) - 2:
+	move()
+	os.system("clear")
+
 
 #Shows the final state of the world
 render()
