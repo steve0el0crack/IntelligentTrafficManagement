@@ -4,16 +4,39 @@ import os
 import time
 
 
-#WORLD INITALLIZING
 world = []
 xdim = int(sys.argv[1])
 ydim = int(sys.argv[2])
-autosnum = int(sys.argv[3])
+xstreets = int(sys.argv[3])
+ystreets = int(sys.argv[4])
+autosnum = int(sys.argv[5])
+dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}		#inspired in game keyboard commands
 
+#WORLD INITALLIZING
 for y in range(ydim):
 	world.append([])
 	for x in range(xdim):
-		world[y].append({"state" : 1})
+		world[y].append({"street" : []})				#Because it can contain more DIRS (KREUZ)
+
+
+#STREETS struct		[{"street" : (dir)}, {}...]
+def setxstreet(xstreet, direction):
+	for place in xstreet:
+		place["street"].append(dirs[direction])		
+map(lambda x: setxstreet(world[x], "A"), map(lambda x: random.randint(0, len(world) - 1), range(0, ystreets)))	
+
+
+map(lambda x: sys.stdout.write(str(x) + "\n"), world)
+
+def setystreet(xcoor, direction):
+	for street in world:
+		street[xcoor]["street"].append(dirs[direction])
+
+map(lambda x: setystreet(x, "S"), map(lambda x: random.randint(0, len(world[0]) - 1), range(0, xstreets)))	
+
+print "\n"
+map(lambda x: sys.stdout.write(str(x) + "\n"), world)
+
 
 #AUTO hinzufuegen
 for x in range(autosnum):
@@ -34,11 +57,12 @@ u"\u001b[38;5;2m" -------> ANSI CODE for GREEN
 """   
 lamphandlung(0)
 
+# street : (dir)
 #PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
 def paintworld():
 	for street in world:
 		for place in street:
-			symbols = {1 : "=", 0 : " ", "auto" : "@"}
+			symbols = {1 : "=", 0 : " ", "auto" : u"\u001b[38;5;39m@"}
 			todraw = ""
 			if "lampe" in place.keys():
 				todraw = place["lampe"]
@@ -72,14 +96,14 @@ def move():
 			autocoords.append((y, x))
 	for coords in autocoords: 
 		carplace = world[coords[0]][coords[1]]
-
+		dirs = (0, 1) 
 		#DEPENDS on the DIRECTION of the MOVEMENT
-		if coords[1] == xdim - 1:
+		if coords[1] == xdim - 1:			#X EDGE
 			nextplace = world[coords[0]][0]
 			nscoords = (coords[0], 0)
 			
 		else:	
-			nextplace = world[coords[0]][coords[1] + 1]
+			nextplace = world[coords[0] + dirs[0]][coords[1] + dirs[1]]
 			nscoords = (coords[0], coords[1] + 1)
 
 
@@ -90,7 +114,7 @@ def move():
 			#Um sich zu bewegen
 			auto = carplace.pop("auto")	
 			world[nscoords[0]][nscoords[1]]["auto"] = auto
-			time.sleep(1)
+			time.sleep(0.01)
 
 	return "1 BEWEGUNG"
 
