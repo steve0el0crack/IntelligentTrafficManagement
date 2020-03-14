@@ -12,6 +12,15 @@ ystreets = int(sys.argv[4])
 autosnum = int(sys.argv[5])
 dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}		#inspired in game keyboard commands
 
+#Function framework
+def unfold(array, retain): 
+	for element in array: 
+        	if type(element) == list:  		
+			unfold(element, retain)
+        	else: 
+            		retain.append(element)
+	return retain 
+
 #WORLD INITALLIZING
 for y in range(ydim):
 	world.append([])
@@ -19,31 +28,64 @@ for y in range(ydim):
 		world[y].append({"street" : []})				#Because it can contain more DIRS (KREUZ)
 
 
+
+
 #STREETS struct		[{"street" : (dir)}, {}...]
-def setxstreet(xstreet, direction):
-	for place in xstreet:
-		place["street"].append(dirs[direction])		
-map(lambda x: setxstreet(world[x], "A"), map(lambda x: random.randint(0, len(world) - 1), range(0, ystreets)))	
-
-
-map(lambda x: sys.stdout.write(str(x) + "\n"), world)
-
-def setystreet(xcoor, direction):
-	for street in world:
+rows = []
+def setrow(row, direction):
+	print row
+	for index, place in enumerate(row):
+		place["street"].append(dirs[direction])	
+		rows.append({":x": index, ":y": world.index(row)})	
+columns = []
+def setcolumn(xcoor, direction):
+	for index, street in enumerate(world):
 		street[xcoor]["street"].append(dirs[direction])
+		columns.append({":x": xcoor, ":y" : index})	
+streetindex = {"x" : map(lambda x: random.randint(0, len(world) - 1), range(0, ystreets)), "y" :  map(lambda x: random.randint(0, len(world[0]) - 1), range(0, xstreets))}
+map(lambda x: setrow(world[x], "A"), streetindex["y"])	
+map(lambda x: setcolumn(x, "S"), streetindex["x"])
 
-map(lambda x: setystreet(x, "S"), map(lambda x: random.randint(0, len(world[0]) - 1), range(0, xstreets)))	
+""" -------> DEBUGGING
+print "JALSKDJFLAKSD;F"
+print rows
+print columns
+print "ALSJHF A;JDFJ"
+"""
 
-print "\n"
-map(lambda x: sys.stdout.write(str(x) + "\n"), world)
+def worldinfo():
+	places = filter(lambda element: (columns + rows).count(element) == 1, (columns + rows)) 		#WITHOUT INTERSECTIONS
+	intersections = filter(lambda element: element in rows, columns)
+	purestreet = filter(lambda element: element not in intersections, places)
+	xborders = [element for cond in [0, xdim - 1] for element in rows if element[":x"] == cond]	
+	yborders = [element for cond in [0, ydim - 1] for element in columns if element[":y"] == cond]	
+	
+	print xborders
+	print yborders
+	
+	return intersections, purestreet, places, xborders, yborders
+
+intersections, purestreet, places, xborders, yborders = worldinfo()
+
+map(lambda x: sys.stdout.write(str(x) + "\n\n"), world)
+time.sleep(2)
+os.system("clear")
 
 
 #AUTO hinzufuegen
 for x in range(autosnum):
-    world[random.randint(0, ydim - 1)][random.randint(0, xdim - 1)]["auto"] = {"ID" : x, "dir" : ""}
+	autoindex = random.choice(xborders + yborders)
+	world[autoindex[":y"]][autoindex[":x"]]["auto"] = {"ID" : x, "dir" : random.choice(world[autoindex[":y"]][autoindex[":x"]]["street"]) }
+
+map(lambda x: sys.stdout.write(str(x) + "\n\n"), world)
 
 #LAMP INITIALLIZING
-lpos = (random.randint(0, ydim) - 1, random.randint(0, xdim) - 1)
+
+tlindex = map(lambda index: map(lambda direction: (index[0] - direction[0], index[1] - direction[1]), world[index[1]][index[0]]["street"]), intersections)
+
+print tlindex
+
+
 world[lpos[0]][lpos[1]]["lampe"] = ""
 def lamphandlung(color):
 	colors = {0 : u"\u001b[38;5;1m", 1 : u"\u001b[38;5;2m"}
