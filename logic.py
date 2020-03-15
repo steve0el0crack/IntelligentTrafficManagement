@@ -66,9 +66,11 @@ def worldinfo():
 intersections, purestreet, places, xborders, yborders = worldinfo()
 
 #AUTO hinzufuegen
+autocoords = []
 for x in range(autosnum):
 	autoindex = random.choice(xborders + yborders)					#AUTO ONLY SETABLE ON BORDERS!
 	world[autoindex[":y"]][autoindex[":x"]]["auto"] = {"ID" : x, "dir" : random.choice(world[autoindex[":y"]][autoindex[":x"]]["street"]) }
+	autocoords.append({":x" : autoindex[":x"] , ":y" : autoindex[":y"]})
 
 
 #LAMP INITIALLIZING
@@ -83,7 +85,6 @@ for x in range(tlnum):
 #PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
 def paintworld():
 	for street in world:
-		#print street
 		for place in street:
 			symbols = {"auto" : u"\u001b[38;5;39m@ ", (-1,0) : "< ", (0, -1) : "^ ", (0, 1) : "v ", (1, 0) : "> "}
 			todraw = ""
@@ -111,67 +112,49 @@ def paintworld():
 
 def detectlampe(place):
 	if "lampe" in place.keys():
-		if place["lampe"] == u"\u001b[38;5;1m":
+		if place["tl"] == u"\u001b[38;5;1m":
 			return "red"
 		else:
 			return "green"
 
-def move():
-	#PAINT the world before THE CHANGE
+def move(autosindex, cond):							#RECURSIVE	
+	print autosindex
+	print cond	
+	
 	paintworld()   
+	
+	recurindex = []
 
-	autocoords =[] 
-	for street in world:
-		for place in street:
-		    if "auto" in place.keys():
-			y = world.index(street)
-			x = street.index(place)	
-			autocoords.append((y, x))
-	for coords in autocoords: 
-		carplace = world[coords[0]][coords[1]]
-		dirs = (0, 1) 
-		#DEPENDS on the DIRECTION of the MOVEMENT
-		if coords[1] == xdim - 1:			#X EDGE
-			nextplace = world[coords[0]][0]
-			nscoords = (coords[0], 0)
+	for coords in autosindex: 
+		change = random.choice(getstruct(coords, world)["street"])	#TUPLE
+		
+		if coords[":y"] + change[1] == ydim - 1:			#Y EDGE
+			nextcoords = {":x" : coords[":x"], ":y" : 0}
 			
+		elif coords[":x"] + change[0] == xdim + 1:			#X EDGE
+			nextcoords = {":x" : 0, ":y" : coords[":y"]}		
 		else:	
-			nextplace = world[coords[0] + dirs[0]][coords[1] + dirs[1]]
-			nscoords = (coords[0], coords[1] + 1)
-
-
-		#Wenn da eine Lampe ist, nicht bewegen.        
-		if detectlampe(carplace) == "red" or "car" in nextplace.keys():
-		    continue #The position (coords) of the next car would be taked
+			nextcoords = {":x" : coords[":x"] + change[0] , ":y" : coords[":y"] + change[1]} 
+       
+		if detectlampe(getstruct(coords, world)) == "red" or "auto" in getstruct(nextcoords, world).keys():		#TRAFFIC LIGHT
+		    continue
 		else:               
-			#Um sich zu bewegen
-			auto = carplace.pop("auto")	
-			world[nscoords[0]][nscoords[1]]["auto"] = auto
+			auto = getstruct(coords, world).pop("auto")	
+			getstruct(nextcoords, world)["auto"] = auto
+			recurindex.append(nextcoords)
 			time.sleep(1)
-
-	return "1 BEWEGUNG"
-
-
-
-
-paintworld()
-
-
-
-
+	if cond == 0:
+		os.system("clear")
+		paintworld()
+		print "MAKED"
+		return ["a"]	
+	else:
+		sys.stdout.write("RECURSIVE!")
+		os.system("clear")
+		move(recurindex, cond - 1)
 
 
 
+print move(autocoords, 20)
 
-
-
-#For every car, until they all state at the lamp
-#while autosnum > len(world[lpos[0]][lpos[1]].keys()) - 2:
-#for x in range(20):
-#	move()
-#	os.system("clear")
-
-
-#Shows the final state of the world
-render()
 
