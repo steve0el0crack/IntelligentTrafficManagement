@@ -11,6 +11,7 @@ xstreets = int(sys.argv[3])
 ystreets = int(sys.argv[4])
 autosnum = int(sys.argv[5])
 tlnum = int(sys.argv[6])
+#dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}               #Stronger Datastruchturs
 dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}		#inspired in game keyboard commands
 
 #Function framework
