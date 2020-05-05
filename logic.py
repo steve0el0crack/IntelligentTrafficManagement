@@ -3,16 +3,12 @@ import sys
 import os
 import time
 
-
-world = []
-xdim = int(sys.argv[1])
-ydim = int(sys.argv[2])
 xstreets = int(sys.argv[3])
 ystreets = int(sys.argv[4])
 autosnum = int(sys.argv[5])
 tlnum = int(sys.argv[6])
-#dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}               #Stronger Datastruchturs
-dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}		#inspired in game keyboard commands
+
+
 
 #Function framework
 def unfold(array, retain): 
@@ -32,83 +28,125 @@ def getkeybyvalue(dicc, value):
 			return relation[0]
 
 #WORLD INITALLIZING
+
+world = []
+xdim = int(sys.argv[1])
+ydim = int(sys.argv[2])
+
 for y in range(ydim):
 	world.append([])
 	for x in range(xdim):
-		world[y].append({"street" : []})				#Because it can contain more DIRS (KREUZ)
+		world[y].append({})				#Because it can contain more DIRS (KREUZ)
 
+def place (coords):
+        return world[coords[1]][coords[0]]
+                
+#Once the world *structure* is done, the streets can be divided into *rows* and *columns*
 
-#STREETS struct		[{"street" : (dir)}, {}...]
+dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}		#inspired in game keyboard commands
+
+#And the new key "dir" will be added to the place with the correspondant direction
+
 rows = []
-def setrow(row, direction):
-	for index, place in enumerate(row):
-		place["street"].append(dirs[direction])	
-		rows.append({":x": index, ":y": world.index(row)})	
+def setrow(ycoor, direction):
+	for place in world[ycoor]:  #in case another direction was assigned before
+                if len(place) > 0:
+                        place["dir"].append(direction)
+                else:
+		        place["dir"] = [direction]	
+        rows.append(ycoor)
+	
 columns = []
 def setcolumn(xcoor, direction):
-	for index, street in enumerate(world):
-		street[xcoor]["street"].append(dirs[direction])
-		columns.append({":x": xcoor, ":y" : index})	
-streetindex = {"x" : map(lambda x: random.randint(0, len(world) - 1), range(0, ystreets)), "y" :  map(lambda x: random.randint(0, len(world[0]) - 1), range(0, xstreets))}
-map(lambda x: setrow(world[x], "A"), streetindex["y"])	
-map(lambda x: setcolumn(x, "S"), streetindex["x"])
+	for row in world:
+                if len(row[xcoor]) > 0:  #in case of another direction
+		        row[xcoor]["dir"].append(direction)
+                else:
+                        row[xcoor]["dir"] = [direction]
+	columns.append(xcoor)
+
+#these are the rows and columns that will be generated later... the streets. They are gonna be defined randomly first
+                
+streetindex = {"horizontal" : map(lambda x: random.randint(0, len(world) - 1), range(0, ystreets)),  #selected out of y coordinates range
+               "vertical" :  map(lambda x: random.randint(0, len(world[0]) - 1), range(0, xstreets))}  #selected out of x coordinates range
+
+#There are determinate directions that a vertical street, or an horizontal one can take...
+[setrow(ycoor, random.choice(["A", "D"])) for ycoor in streetindex["horizontal"]]
+[setcolumn(xcoor, random.choice(["W", "S"])) for xcoor in streetindex ["vertical"]]
+
+#for easy mantainence of the code, the world was created using 0-n index!
+#After the creation of the streets, I only need to know the coordenates x OR y of each one. That makes everything easier from now on.
 
 def worldinfo():
-	places = filter(lambda element: (columns + rows).count(element) == 1, (columns + rows)) 		#WITHOUT INTERSECTIONS
-	intersections = filter(lambda element: element in rows, columns)
-	purestreet = filter(lambda element: element not in intersections, places)
-	
-	#FIRST and LAST place of each COLUMN and ROW 
-	xborders = [element for cond in [0, xdim - 1] for element in rows if element[":x"] == cond]	
-	yborders = [element for cond in [0, ydim - 1] for element in columns if element[":y"] == cond]	
-	
-	return intersections, purestreet, places, xborders, yborders
+    	intersections = [(x, y) for y in rows for x in columns]
 
-intersections, purestreet, places, xborders, yborders = worldinfo()
+	#FIRST and LAST place of each COLUMN and ROW. The output order must be (x, y), and therefore 2 functions.
+        yborders = [(limit, ycoor) for limit in [0, ydim - 1] for ycoor in streetindex["horizontal"]]
+	xborders = [(xcoor, limit) for limit in [0, ydim - 1] for xcoor in streetindex["vertical"]]
+	
+	return intersections, xborders, yborders
+
+intersections, xborders, yborders = worldinfo()
 
 #AUTO hinzufuegen
 autocoords = []
 for x in range(autosnum):
 	autoindex = random.choice(xborders + yborders)					#AUTO ONLY SETABLE ON BORDERS!
-	world[autoindex[":y"]][autoindex[":x"]]["auto"] = {"ID" : x, "dir" : random.choice(world[autoindex[":y"]][autoindex[":x"]]["street"]) }
-	autocoords.append({":x" : autoindex[":x"] , ":y" : autoindex[":y"]})
-
+	place(autoindex)["auto"] = {str(x) : random.choice(place(autoindex)["dir"])}
+	autocoords.append(autoindex)
 
 #LAMP INITIALLIZING
-tlpos = unfold(map(lambda coors: map(lambda direction: {":x": coors[":x"] - direction[0], ":y" : coors[":y"] - direction[1]} ,getstruct(coors, world)["street"]), intersections), [])
+
+tlpos = []
+for a in [-1, 0, 1]:
+        for b in [-1, 0, 1]:
+                  if abs(b) != abs(a):
+                          for kreuz in intersections:
+                                  tlpos.append((kreuz[0] + a, kreuz[1] + b))  #the edges are gonna be infinite windows, that means that negative numbers have no effect, since arrays in python can also be manipulated via negative index's
 
 tlcolors = {"red": u"\u001b[38;5;1m", "green" : u"\u001b[38;5;2m"}			#ANSI CODE
-for x in range(tlnum):
+for x in range(tlnum):  #use recursive behavior to discriminate previous already taken alternatives...
 	tlindex = random.choice(tlpos)					
-	world[tlindex[":y"]][tlindex[":x"]]["tl"] =  random.choice(tlcolors.values())
+	world[tlindex[1]][tlindex[0]]["tl"]=  random.choice(tlcolors.keys())
 
+
+for a in world:
+        print a
 
 #PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
 def paintworld():
-	for street in world:
-		for place in street:
-			symbols = {"auto" : u"\u001b[38;5;39m@ ", (-1,0) : "< ", (0, -1) : "^ ", (0, 1) : "v ", (1, 0) : "> "}
+	for row in world:  #a whole row is gonna be taken, because the world was defined in that order: First Y and then X
+		for place in row:  #place is a dictionary
+			symbols = {"auto" : u"\u001b[38;5;39m@ ",
+                                   "A" : "< ",
+                                   "W" : "^ ",
+                                   "S" : "v ",
+                                   "D" : "> "}
 			todraw = ""
 
-			if len(place["street"]) == 0:							#NOT STREET
+			if len(place) == 0:							#NOT STREET
 				todraw = " "
-			elif len(place["street"]) > 1: 							#INTERSECTION
+			elif len(place["dir"]) > 1:                          #INTERSECTION when there are more dirs attached to the street
 				if "auto" in place.keys():						#WITH AUTO
 					todraw = symbols["auto"]		
 				else:									#ALONE 
 					todraw = "* "
-			elif len(place["street"]) == 1:							#STREET
+			elif len(place) > 1:         #STREET
 				if "tl" in place.keys():						#WITH TRAFFIC LIGHT
-					todraw = place["tl"]
+					todraw = tlcolors[place["tl"]]
 				if "auto" in place.keys():						#WITH AUTO
 					todraw = todraw + symbols["auto"] 
 				
-				else:
-					todraw = todraw + symbols[place["street"][0]]			#ONLY
+				else: 
+					todraw = todraw + symbols[place["dir"][0]] #ONLY
 			sys.stdout.write(todraw.ljust(2))
 			sys.stdout.write(u"\u001b[0m")
 		print ""
 
+
+paintworld()
+sys.exit()
+                
 #MAIN FUNCTION
 
 def detectlampe(place):
