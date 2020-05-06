@@ -113,7 +113,7 @@ for x in range(tlnum):  #use recursive behavior to discriminate previous already
 for a in world:
         print a
 
-#PAINT WORLD			" " = state 0 (building) \ = = state 1 (street) \ @ = car \ H = Lampe 
+#PAINT WORLD			k
 def paintworld():
 	for row in world:  #a whole row is gonna be taken, because the world was defined in that order: First Y and then X
 		for place in row:  #place is a dictionary
@@ -131,7 +131,7 @@ def paintworld():
 					todraw = symbols["auto"]		
 				else:									#ALONE 
 					todraw = "* "
-			elif len(place) > 1:         #STREET
+			else:         #STREET
 				if "tl" in place.keys():						#WITH TRAFFIC LIGHT
 					todraw = tlcolors[place["tl"]]
 				if "auto" in place.keys():						#WITH AUTO
