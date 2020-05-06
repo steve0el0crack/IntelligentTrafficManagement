@@ -19,9 +19,6 @@ def unfold(array, retain):
             		retain.append(element)
 	return retain 
 
-def getstruct(dicc, world):
-	return world[dicc[":y"]][dicc[":x"]]
-
 def getkeybyvalue(dicc, value):
 	for relation in dicc.items():
 		if relation[1] == value:
@@ -39,8 +36,8 @@ for y in range(ydim):
 		world[y].append({})				#Because it can contain more DIRS (KREUZ)
 
 def place (coords):
-        return world[coords[1]][coords[0]]
-                
+        return world[coords[1]][coords[0]]          #Tuples are so recieved: (x, y)
+               
 #Once the world *structure* is done, the streets can be divided into *rows* and *columns*
 
 dirs = {"A" : (-1, 0), "D" : (1, 0), "W" : (0, -1), "S" : (0, 1)}		#inspired in game keyboard commands
@@ -110,10 +107,7 @@ for x in range(tlnum):  #use recursive behavior to discriminate previous already
 	world[tlindex[1]][tlindex[0]]["tl"]=  random.choice(tlcolors.keys())
 
 
-for a in world:
-        print a
-
-#PAINT WORLD			k
+#*********************************Rendering on terminal*****************************************************************************
 def paintworld():
 	for row in world:  #a whole row is gonna be taken, because the world was defined in that order: First Y and then X
 		for place in row:  #place is a dictionary
@@ -144,10 +138,7 @@ def paintworld():
 		print ""
 
 
-paintworld()
-sys.exit()
-                
-#MAIN FUNCTION
+#**************************************Main function*****************************************************
 
 def detectlampe(place):
 	if "lampe" in place.keys():
@@ -156,43 +147,38 @@ def detectlampe(place):
 		else:
 			return "green"
 
-def move(autosindex, cond):							#RECURSIVE	
-	print autosindex
-	print cond	
-	
+def move(autosindex, times):							#RECURSIVE	
 	paintworld()   
 	
 	recurindex = []
 
 	for coords in autosindex: 
-		change = random.choice(getstruct(coords, world)["street"])	#TUPLE
-		
-		if coords[":y"] + change[1] == ydim - 1:			#Y EDGE
-			nextcoords = {":x" : coords[":x"], ":y" : 0}
-			
-		elif coords[":x"] + change[0] == xdim + 1:			#X EDGE
-			nextcoords = {":x" : 0, ":y" : coords[":y"]}		
+		change = dirs[random.choice(place(coords)["dir"])]      #one of "A, D, S, W"
+
+                if coords[0] + change[0] > xdim + 1:			#X EDGE
+			nextcoords = (0, coords[1])		
+		elif coords[1] + change[1] > ydim - 1:			#Y EDGE
+			nextcoords = (coords[0
+                        ], 0) 
+
 		else:	
-			nextcoords = {":x" : coords[":x"] + change[0] , ":y" : coords[":y"] + change[1]} 
+			nextcoords = (coords[0] + change[0] , coords[1] + change[1]) 
        
-		if detectlampe(getstruct(coords, world)) == "red" or "auto" in getstruct(nextcoords, world).keys():		#TRAFFIC LIGHT
+		if detectlampe(place(coords)) == "red" or "auto" in place(nextcoords).keys():		#TRAFFIC LIGHT
 		    continue
 		else:               
-			auto = getstruct(coords, world).pop("auto")	
-			getstruct(nextcoords, world)["auto"] = auto
+			auto = place(coords).pop("auto")	
+			place(nextcoords)["auto"] = auto
 			recurindex.append(nextcoords)
 			time.sleep(1)
-	if cond == 0:
+	if times == 0:
 		os.system("clear")
 		paintworld()
 		print "MAKED"
 		return ["a"]	
 	else:
-		sys.stdout.write("RECURSIVE!")
 		os.system("clear")
-		move(recurindex, cond - 1)
-
-
+		move(recurindex, times - 1)
 
 print move(autocoords, 20)
 
